@@ -37,6 +37,7 @@ use crate::{language_server_transport, LAST_CLIENT};
 use ccls::{EditorCallParams, EditorInheritanceParams, EditorMemberParams, EditorNavigateParams};
 use code_lens::{text_document_code_lens, CodeLensOptions};
 use crossbeam_channel::{after, never, tick, Receiver, Select, Sender};
+use document_links::DocumentLinkOptions;
 use indoc::formatdoc;
 use inlay_hints::{InlayHintApplyParams, InlayHintsOptions};
 use itertools::Itertools;
@@ -471,6 +472,9 @@ fn dispatch_fifo_request(
         "kakoune/textDocument/codeLens" => Box::new(CodeLensOptions {
             selection_desc: state.next()?,
         }),
+        "kakoune/textDocument/documentLink" => Box::new(DocumentLinkOptions {
+            selection_desc: state.next()?,
+        }),
         "kakoune/did-change-option" => {
             let hook_param = state.next::<String>()?;
             let Some((key, value)) = hook_param.split_once('=') else {
@@ -520,6 +524,7 @@ fn dispatch_fifo_request(
             params
         }
         "textDocument/codeLens" => Box::new(()),
+        "textDocument/documentLink" => Box::new(()),
         "textDocument/completion" => Box::new(TextDocumentCompletionParams {
             position: state.next()?,
             completion: EditorCompletion {
@@ -1839,6 +1844,9 @@ fn dispatch_editor_request(request: EditorRequest, ctx: &mut Context) -> Control
         "kakoune/textDocument/codeLens" => {
             code_lens::resolve_and_perform_code_lens(meta, params.unbox(), ctx);
         }
+        "kakoune/textDocument/documentLink" => {
+            document_links::resolve_and_follow_document_link(meta, params.unbox(), ctx);
+        }
         request::Formatting::METHOD => {
             formatting::text_document_formatting(meta, response_fifo, params.unbox(), ctx);
         }
@@ -1879,6 +1887,10 @@ fn dispatch_editor_request(request: EditorRequest, ctx: &mut Context) -> Control
 
         request::InlayHintRequest::METHOD => {
             inlay_hints::inlay_hints(meta, params.unbox(), ctx);
+        }
+
+        request::DocumentLinkRequest::METHOD => {
+            document_links::document_links(meta, ctx)
         }
 
         show_message::SHOW_MESSAGE_REQUEST_NEXT => {

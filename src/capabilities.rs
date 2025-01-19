@@ -470,6 +470,7 @@ pub const CAPABILITY_SEMANTIC_TOKENS: &str = "lsp-semantic-tokens";
 pub const CAPABILITY_SIGNATURE_HELP: &str = "lsp-signature-help";
 pub const CAPABILITY_TYPE_DEFINITION: &str = "lsp-type-definition";
 pub const CAPABILITY_WORKSPACE_SYMBOL: &str = "lsp-workspace-symbol";
+pub const CAPABILITY_DOCUMENT_LINKS: &str = "lsp-document-links";
 
 pub const CAPABILITY_TEXT_DOCUMENT_BUILD: &str = "texlab-build";
 pub const CAPABILITY_TEXT_DOCUMENT_FORWARD_SEARCH: &str = "texlab-forward-search";
@@ -615,6 +616,7 @@ pub fn server_has_capability(
                 .get("textDocumentForwardSearch")
                 .is_some_and(|v| v.as_bool().is_some_and(|v| v))
         }),
+        CAPABILITY_DOCUMENT_LINKS => server_capabilities.document_link_provider.is_some(),
         _ => panic!("BUG: missing case"),
     }
 }
@@ -680,6 +682,7 @@ pub fn capabilities(meta: EditorMeta, ctx: &mut Context) {
             .or_default()
             .push(server_name);
         probe_feature(to_editor, entry, &mut features, CAPABILITY_INLAY_HINTS);
+        probe_feature(to_editor, entry, &mut features, CAPABILITY_DOCUMENT_LINKS);
 
         // NOTE controller should park request for capabilities until they are available thus it should
         // be safe to unwrap here (otherwise something unexpectedly wrong and it's better to panic)
